@@ -1,4 +1,6 @@
-# 10.5.0/24 is a completely open network. Typically I have all dhcp leases added to my ott.cbains.ca zone automagically, and that dns server serves all vlans.
+# 10.5../16 is a completely open network. Typically I have all dhcp leases added to my ott.cbains.ca zone automagically, and that dns server serves all vlans.
 # This leaks (a bit of) information to everyone within radio range, assuming they know, or can guess the hostnames of machines on my network, since they can poke at my network topology and figure out which devices are in what network segments.
 # Instead, on this network we continnue to use the nice DNS setup (dhcp registration + dns crypt + monitoring), but we drop any requests that could otherwise reveal network topology.
-drop dns 10.5.0.1/24 any -> 10.5.0.1 any (msg:"DNS Query for local zone"; dns.query; dotprefix; content:".ott.cbains.ca"; nocase; endswith; metadata:created_at 2024_12_25, updated_at 2024_12_25; classtype:misc-activity; sid:999991; rev:5;)
+
+# I use nat to send all DNS traffic to the network wide resolver, hence the "any" dest.
+drop dns 10.5.0.0/16 any -> any any (msg:"DNS Query for local zone"; dns.query; dotprefix; content:".ott.cbains.ca"; nocase; endswith; metadata:created_at 2024_12_25, updated_at 2024_12_25; classtype:misc-activity; sid:999991; rev:6;)
