@@ -1,1 +1,1 @@
-alert udp 10.5.0.1/24 any -> any any(msg:"DNS Query for local zone"; dns.query; content:"fileserverweb.ott.cbains.ca"; nocase; metadata:created_at 2019_05_15, updated_at 2019_05_15; classtype:policy-violation; sid:999991; rev:1;)
+drop udp 10.5.0.1/24 any -> 10.5.0.1 53(msg:"DNS Query for local zone"; dns_query; content:"fileserverweb.ott.cbains.ca"; nocase; metadata:created_at 2019_05_15, updated_at 2019_05_15; classtype:policy-violation; sid:999991; rev:3;)
