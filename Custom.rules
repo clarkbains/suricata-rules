@@ -4,3 +4,19 @@
 
 # I use nat to send all DNS traffic to the network wide resolver, hence the "any" dest.
 drop dns 10.5.0.0/16 any -> any any (msg:"DNS Query for local zone"; dns.query; dotprefix; content:".ott.cbains.ca"; nocase; endswith; metadata:created_at 2024_12_25, updated_at 2024_12_25; classtype:misc-activity; sid:999991; rev:6;)
+
+# --- LG webOS TV (10.4.255.249, media vlan) telemetry lockdown ---
+# The TV phones home constantly: LG ads (lgsmartad), platform/telemetry (lgsmartplatform,
+# lgwebostv elastic/membership), ThinQ/IoT (lgthinq, lgtviot), content recs (wiselg), and
+# assorted Google connectivity-check/push endpoints. The only routed (non-L2) egress I want
+# from this TV is YouTube. I match on TLS SNI / HTTP host, NOT on IP, because YouTube and all
+# the telemetry endpoints ride the SAME Google IP ranges (142.251/172.217/74.125/192.178...),
+# so an address allowlist cannot tell them apart -- only the hostname can.
+#
+# Dest is "!10.4.0.0/16" so intra-segment L2 and DNS-to-resolver are untouched; anything the TV
+# tries to reach off-segment (internet or other vlans) must be a YouTube host or it is dropped.
+# QUIC (udp/443) is blocked by a pf rule on LAN_MEDIA, not here -- that forces the TV onto TCP
+# TLS so the SNI is actually visible to these rules (ids has no business doing a coarse port
+# block anyway).
+drop tls 10.4.255.249 any -> !10.4.0.0/16 any (flow:to_server,established; tls.sni; pcre:"!/(^|\.)(youtube\.com|youtube-nocookie\.com|ytimg\.com|ggpht\.com|googlevideo\.com|(youtubei|jnn-pa|play)\.googleapis\.com)$/i"; msg:"MEDIA-TV: non-YouTube TLS blocked"; metadata:created_at 2026_10_25, updated_at 2026_10_25; classtype:policy-violation; sid:999992; rev:1;)
+drop http 10.4.255.249 any -> !10.4.0.0/16 any (flow:to_server,established; http.host; pcre:"!/(^|\.)(youtube\.com|ytimg\.com|googlevideo\.com|googleapis\.com)$/i"; msg:"MEDIA-TV: non-YouTube HTTP blocked"; metadata:created_at 2026_10_25, updated_at 2026_10_25; classtype:policy-violation; sid:999993; rev:1;)
